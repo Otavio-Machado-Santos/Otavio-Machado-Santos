@@ -1,11 +1,44 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-reduced-motion: reduce)" srcset="assets/header-static.png">
-  <img src="assets/header.gif" width="1200" alt="Otávio Machado Santos — Observabilidade, DevOps e AI Ops. Transformando infraestrutura em produto com IA e automação.">
+  <source media="(prefers-reduced-motion: reduce)" srcset="assets/intro-ascii-static.png">
+  <img src="assets/intro-ascii.gif" width="1200" alt="Retrato de Otávio Machado Santos em caracteres, formado aos poucos. Observabilidade, DevOps e AI Ops.">
 </picture>
 
 **Analista de Observabilidade Pleno · DevOps e automação · AI Ops**
+
+</div>
+
+## Meu histórico no GitHub
+
+<img src="assets/contributions.svg" width="900" alt="Calendário real de contribuições no último ano, com barras mensais e data de coleta. Inclui commits, pull requests e issues.">
+
+<div align="center">
+  <img src="assets/github-stats.svg" width="400" alt="Estatísticas de repositórios públicos, contribuições no último ano, estrelas e forks recebidos. A data de coleta aparece no gráfico.">
+  <img src="assets/languages.svg" width="400" alt="Proporção de código por linguagem nos repositórios públicos. A data de coleta aparece no gráfico.">
+</div>
+
+[Explorar minhas contribuições](https://github.com/Otavio-Machado-Santos?tab=overview) · [Ver meus commits públicos](https://github.com/search?q=author%3AOtavio-Machado-Santos&type=commits)
+
+<details>
+<summary><strong>Últimos commits nos projetos públicos</strong></summary>
+
+<!-- public-commits:start -->
+
+- **16/09/2026 · royal-mcp:** [ci: use Node 24 checkout action](https://github.com/Otavio-Machado-Santos/royal-mcp/commit/4d38269057edcaca5f99d1191d265b73370bc6f5) · `4d38269`
+- **16/09/2026 · royal-mcp:** [feat: publish sanitized Royal MCP trust boundary](https://github.com/Otavio-Machado-Santos/royal-mcp/commit/1cb71e444fb6f3cde11486207c80325fa2ebc259) · `1cb71e4`
+- **11/06/2026 · Organizer_brain:** [Merge pull request #1 from Otavio-Machado-Santos/feat/projetos-e-captura-por-voz](https://github.com/Otavio-Machado-Santos/Organizer_brain/commit/17cc72e89fd617481266bec823640d1f77901958) · `17cc72e`
+- **11/06/2026 · Organizer_brain:** [feat: projetos, captura por voz (fn+M) e relatório combinando GitHub + tasks](https://github.com/Otavio-Machado-Santos/Organizer_brain/commit/fd49cb9a0fc25901cea448f68cd3375f3fb78767) · `fd49cb9`
+
+<sub>Últimos commits de minha autoria nas branches padrão dos projetos públicos, excluindo este README. Coleta: 09/10/2026.</sub>
+
+<!-- public-commits:end -->
+
+</details>
+
+<sub>Gráficos coletados da API do GitHub, com data visível. Linguagens representam código dos repositórios públicos. [Atualizar os dados](scripts/README.md).</sub>
+
+<div align="center">
 
 [![LinkedIn](assets/linkedin.svg)](https://linkedin.com/in/ot%C3%A1vio-machado-santos)
 [![E-mail](assets/email.svg)](mailto:otaviomachado2003@gmail.com)
@@ -70,20 +103,6 @@ Agente conversacional com consultas dinâmicas sobre dados de incidentes em temp
 - **Flowbix AI NOC Copilot:** agente conversacional em n8n e LangChain sobre uma base de incidentes ativos.
 
 </details>
-
-## Atividade no GitHub
-
-<div align="center">
-  <img src="assets/github-stats.svg" width="400" alt="Estatísticas de repositórios públicos, contribuições no último ano, estrelas e forks recebidos. A data de coleta aparece no gráfico.">
-  <img src="assets/languages.svg" width="400" alt="Proporção de código por linguagem nos repositórios públicos. A data de coleta aparece no gráfico.">
-</div>
-
-<picture>
-  <source media="(prefers-reduced-motion: reduce)" srcset="assets/contributions-static.svg">
-  <img src="assets/contributions.svg" width="900" alt="Mapa real das contribuições no GitHub durante o último ano. A data de coleta aparece no gráfico.">
-</picture>
-
-<sub>A data de coleta aparece em cada gráfico. As linguagens refletem o código dos repositórios públicos; os cards podem ser atualizados pelo [script do perfil](scripts/README.md).</sub>
 
 ## Certificações
 

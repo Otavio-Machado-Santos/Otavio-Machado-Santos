@@ -12,6 +12,7 @@ from datetime import datetime
 from html import escape
 import json
 from pathlib import Path
+import re
 import subprocess
 from zoneinfo import ZoneInfo
 
@@ -64,7 +65,7 @@ def render(user, updated):
     for i, (label, number) in enumerate(stats):
         x = 28 + (i % 2) * 213
         y = 113 + (i // 2) * 83
-        parts += [text(x, y, f"{number:,}".replace(",", "."), 32, "#79c0ff"),
+        parts += [text(x, y, f"{number:,}".replace(",", "."), 32, "#39d353"),
                   text(x, y + 23, label, 13, "#8b949e")]
     write("github-stats.svg", 460, 250, "".join(parts), "Atividade no GitHub", "; ".join(f"{a}: {b}" for a, b in stats))
 
@@ -97,22 +98,71 @@ def render(user, updated):
     parts.append(text(26, 229, f"Coleta: {updated} · fonte: API do GitHub", 12, "#8b949e"))
     write("languages.svg", 460, 250, "".join(parts), "Linguagens nos repositórios públicos", "; ".join(f"{k}: {v} bytes" for k, v in ordered))
 
-    levels = {"NONE": "#161b22", "FIRST_QUARTILE": "#183d57", "SECOND_QUARTILE": "#24658c", "THIRD_QUARTILE": "#439fca", "FOURTH_QUARTILE": "#79c0ff"}
+    levels = {"NONE": "#161b22", "FIRST_QUARTILE": "#0e4429", "SECOND_QUARTILE": "#006d32", "THIRD_QUARTILE": "#26a641", "FOURTH_QUARTILE": "#39d353"}
     weeks = calendar["weeks"]
-    parts = [text(28, 38, "Sinais de atividade", 22),
-             text(28, 63, f"{calendar['totalContributions']:,} contribuições no último ano".replace(",", "."), 14, "#8b949e")]
+    months = defaultdict(int)
+    month_names = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
+    parts = [text(28, 39, "Meu histórico no GitHub", 24),
+             text(28, 68, "Um ano de contribuições · volume por dia e por mês", 14, "#8b949e"),
+             text(866, 39, f"{calendar['totalContributions']:,}".replace(",", "."), 30, "#39d353", 'text-anchor="end"'),
+             text(866, 63, "contribuições", 12, "#8b949e", 'text-anchor="end"')]
+    last_month = None
     for col, week in enumerate(weeks):
         for day in week["contributionDays"]:
             date = datetime.fromisoformat(day["date"])
             row = (date.weekday() + 1) % 7
-            x, y = 28 + col * 16, 95 + row * 16
+            x, y = 28 + col * 16, 104 + row * 16
+            month = date.strftime("%Y-%m")
+            months[month] += day["contributionCount"]
+            if month != last_month:
+                # Não sobrepor o rótulo do último mês parcial.
+                if col < len(weeks) - 2:
+                    parts.append(text(x, 94, month_names[date.month - 1], 11, "#8b949e"))
+                last_month = month
             parts.append(f'<rect x="{x}" y="{y}" width="12" height="12" rx="3" fill="{levels[day["contributionLevel"]]}"><title>{day["date"]}: {day["contributionCount"]} contribuições</title></rect>')
-    # O cursor percorre o calendário; ele não muda os dados nem inventa atividade.
-    cursor = '<circle cx="34" cy="211" r="4" fill="#f46800"><animate attributeName="cx" values="34;866;34" dur="18s" repeatCount="indefinite"/></circle>'
-    bottom = text(28, 246, f"Coleta: {updated} · fonte: calendário do GitHub", 12, "#8b949e")
-    desc = "Mapa real de contribuições do calendário do GitHub no último ano. O ponto laranja é decorativo."
-    write("contributions.svg", 900, 270, "".join(parts) + cursor + bottom, "Mapa de contribuições", desc)
-    write("contributions-static.svg", 900, 270, "".join(parts) + bottom, "Mapa de contribuições sem animação", desc)
+    parts += [text(28, 243, "Contribuições por mês", 13),
+              text(866, 243, "Meses das extremidades são parciais", 11, "#8b949e", 'text-anchor="end"')]
+    step = 840 / len(months)
+    maximum = max(months.values(), default=1) or 1
+    for i, (month, number) in enumerate(sorted(months.items())):
+        x = 28 + i * step
+        height = number / maximum * 56
+        parts += [f'<rect x="{x:.2f}" y="{318-height:.2f}" width="{step-10:.2f}" height="{height:.2f}" rx="2" fill="#26a641"><title>{month}: {number} contribuições</title></rect>',
+                  text(x + (step-10)/2, 336, month_names[int(month[5:]) - 1] + "/" + month[2:4], 11, "#8b949e", 'text-anchor="middle"')]
+    parts.append(text(28, 365, f"Coleta: {updated} · fonte: calendário do GitHub · inclui commits, PRs e issues", 12, "#8b949e"))
+    desc = "Calendário real de contribuições, com volume mensal. Os meses das extremidades são parciais."
+    write("contributions.svg", 900, 388, "".join(parts), "Histórico de contribuições no GitHub", desc)
+
+
+def collect_public_commits(user):
+    commits = []
+    for repo in user["repositories"]["nodes"]:
+        if repo["name"] == USERNAME:
+            continue
+        endpoint = f'repos/{USERNAME}/{repo["name"]}/commits?author={USERNAME}&per_page=5'
+        result = subprocess.run(["gh", "api", endpoint], check=True, text=True, capture_output=True)
+        for commit in json.loads(result.stdout):
+            commits.append({"repo": repo["name"], "sha": commit["sha"], "date": commit["commit"]["author"]["date"],
+                            "title": commit["commit"]["message"].splitlines()[0], "url": commit["html_url"]})
+    return sorted(commits, key=lambda c: c["date"], reverse=True)[:4]
+
+
+def render_commits(commits, updated):
+    def markdown(value):
+        return re.sub(r'([\\`*\[\]<>])', r'\\\1', value)
+    lines = []
+    for commit in commits:
+        date = datetime.fromisoformat(commit["date"].replace("Z", "+00:00")).astimezone(ZoneInfo("America/Sao_Paulo"))
+        lines.append(f'- **{date:%d/%m/%Y} · {markdown(commit["repo"])}:** [{markdown(commit["title"])}]({commit["url"]}) · `{commit["sha"][:7]}`')
+    lines.append(f"\n<sub>Últimos commits de minha autoria nas branches padrão dos projetos públicos, excluindo este README. Coleta: {updated}.</sub>")
+    readme = ROOT / "README.md"
+    source = readme.read_text(encoding="utf-8")
+    start, end = "<!-- public-commits:start -->", "<!-- public-commits:end -->"
+    if source.count(start) != 1 or source.count(end) != 1:
+        raise ValueError("Marcadores do histórico de commits ausentes ou duplicados no README.")
+    before, rest = source.split(start)
+    _, after = rest.split(end)
+    readme.write_text(before + start + "\n\n" + "\n".join(lines) + "\n\n" + end + after, encoding="utf-8")
 
 
 def main():
@@ -134,6 +184,9 @@ def main():
         raise ValueError("A API retornou um usuário diferente do perfil configurado.")
     updated = args.date or datetime.now(ZoneInfo("America/Sao_Paulo")).strftime("%d/%m/%Y")
     render(user, updated)
+    commits = payload.get("publicCommits") if args.data else collect_public_commits(user)
+    if commits is not None:
+        render_commits(commits, updated)
     print(f"Cards de {USERNAME} atualizados. Coleta: {updated}.")
 
 
