@@ -8,7 +8,7 @@ O modo --data permite renderizar uma coleta já realizada, sem nova consulta.
 
 import argparse
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from html import escape
 import json
 from pathlib import Path
@@ -98,40 +98,103 @@ def render(user, updated):
     parts.append(text(26, 229, f"Coleta: {updated} · fonte: API do GitHub", 12, "#8b949e"))
     write("languages.svg", 460, 250, "".join(parts), "Linguagens nos repositórios públicos", "; ".join(f"{k}: {v} bytes" for k, v in ordered))
 
+    render_activity(calendar, updated)
+
+
+def activity_summary(calendar):
+    days = sorted((day for week in calendar["weeks"] for day in week["contributionDays"]), key=lambda day: day["date"])
+    if not days:
+        raise ValueError("Calendário vazio.")
+    if len({day["date"] for day in days}) != len(days):
+        raise ValueError("O calendário contém datas duplicadas.")
+    for previous, day in zip(days, days[1:]):
+        if datetime.fromisoformat(day["date"]) - datetime.fromisoformat(previous["date"]) != timedelta(days=1):
+            raise ValueError("Há uma lacuna no calendário retornado pela API.")
+    if sum(day["contributionCount"] for day in days) != calendar["totalContributions"]:
+        raise ValueError("O total de contribuições não corresponde às células do calendário.")
+    current = longest = run = 0
+    for day in days:
+        run = run + 1 if day["contributionCount"] else 0
+        longest = max(longest, run)
+    # Um dia ainda em andamento sem contribuição não interrompe a sequência de ontem.
+    eligible = days if days[-1]["contributionCount"] else days[:-1]
+    for day in reversed(eligible):
+        if not day["contributionCount"]:
+            break
+        current += 1
+    return days, current, longest, sum(bool(day["contributionCount"]) for day in days)
+
+
+def render_activity(calendar, updated):
+    days, current, longest, active = activity_summary(calendar)
     levels = {"NONE": "#161b22", "FIRST_QUARTILE": "#0e4429", "SECOND_QUARTILE": "#006d32", "THIRD_QUARTILE": "#26a641", "FOURTH_QUARTILE": "#39d353"}
     weeks = calendar["weeks"]
-    months = defaultdict(int)
     month_names = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
-    parts = [text(28, 39, "Meu histórico no GitHub", 24),
-             text(28, 68, "Um ano de contribuições · volume por dia e por mês", 14, "#8b949e"),
-             text(866, 39, f"{calendar['totalContributions']:,}".replace(",", "."), 30, "#39d353", 'text-anchor="end"'),
-             text(866, 63, "contribuições", 12, "#8b949e", 'text-anchor="end"')]
+    parts = [text(27, 33, "Meu histórico de contribuições", 19),
+             text(873, 33, f"{calendar['totalContributions']:,}".replace(",", ".") + " contribuições", 18, "#39d353", 'text-anchor="end"')]
+    for row, label in [(1, "seg"), (3, "qua"), (5, "sex")]:
+        parts.append(text(13, 75 + row * 16, label, 10, "#8b949e"))
     last_month = None
+    cells = []
     for col, week in enumerate(weeks):
         for day in week["contributionDays"]:
             date = datetime.fromisoformat(day["date"])
             row = (date.weekday() + 1) % 7
-            x, y = 28 + col * 16, 104 + row * 16
-            month = date.strftime("%Y-%m")
-            months[month] += day["contributionCount"]
+            x, y = 39 + col * 16, 64 + row * 16
+            month = (date.year, date.month)
             if month != last_month:
-                # Não sobrepor o rótulo do último mês parcial.
                 if col < len(weeks) - 2:
-                    parts.append(text(x, 94, month_names[date.month - 1], 11, "#8b949e"))
+                    parts.append(text(x, 55, month_names[date.month - 1], 10, "#8b949e"))
                 last_month = month
-            parts.append(f'<rect x="{x}" y="{y}" width="12" height="12" rx="3" fill="{levels[day["contributionLevel"]]}"><title>{day["date"]}: {day["contributionCount"]} contribuições</title></rect>')
-    parts += [text(28, 243, "Contribuições por mês", 13),
-              text(866, 243, "Meses das extremidades são parciais", 11, "#8b949e", 'text-anchor="end"')]
-    step = 840 / len(months)
-    maximum = max(months.values(), default=1) or 1
-    for i, (month, number) in enumerate(sorted(months.items())):
-        x = 28 + i * step
-        height = number / maximum * 56
-        parts += [f'<rect x="{x:.2f}" y="{318-height:.2f}" width="{step-10:.2f}" height="{height:.2f}" rx="2" fill="#26a641"><title>{month}: {number} contribuições</title></rect>',
-                  text(x + (step-10)/2, 336, month_names[int(month[5:]) - 1] + "/" + month[2:4], 11, "#8b949e", 'text-anchor="middle"')]
-    parts.append(text(28, 365, f"Coleta: {updated} · fonte: calendário do GitHub · inclui commits, PRs e issues", 12, "#8b949e"))
-    desc = "Calendário real de contribuições, com volume mensal. Os meses das extremidades são parciais."
-    write("contributions.svg", 900, 388, "".join(parts), "Histórico de contribuições no GitHub", desc)
+            delay = col * 0.065 + row * 0.036
+            cells.append((x, y, levels[day["contributionLevel"]], delay, day))
+    parts.append(text(27, 192, f"Coleta: {updated} · GitHub · commits, PRs e issues", 11, "#8b949e"))
+    parts.append(text(729, 192, "menos", 10, "#8b949e"))
+    for i, color in enumerate(levels.values()):
+        parts.append(f'<rect x="{767+i*16}" y="181" width="12" height="12" rx="2" fill="{color}"/>')
+    parts.append(text(855, 192, "mais", 10, "#8b949e"))
+    motion = '''<style>
+.day{transform-box:fill-box;transform-origin:center;animation:assemble .5s ease-out both}
+.lit{animation:glow .75s ease-out both}
+@keyframes assemble{0%{opacity:0;transform:scale(.15)}70%{opacity:1;transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
+@keyframes glow{0%,45%{filter:brightness(2.2)}100%{filter:brightness(1)}}
+@media(prefers-reduced-motion:reduce){.day,.lit{animation:none}}
+</style>'''
+    desc = f"Calendário de {days[0]['date']} a {days[-1]['date']}, com dados reais do GitHub. Inclui commits, pull requests e issues."
+    for animated in (False, True):
+        rendered = []
+        for x, y, color, delay, day in cells:
+            rect = f'<rect x="{x}" y="{y}" width="13" height="13" rx="2" fill="{color}"><title>{day["date"]}: {day["contributionCount"]} contribuições</title></rect>'
+            if animated:
+                if day["contributionCount"]:
+                    rect = f'<g class="lit" style="animation-delay:{delay:.3f}s">{rect}</g>'
+                rect = f'<g class="day" style="animation-delay:{delay:.3f}s">{rect}</g>'
+            rendered.append(rect)
+        write("contributions-animated.svg" if animated else "contributions-static.svg", 900, 210,
+              (motion if animated else "") + "".join(parts + rendered), "Meu calendário de contribuições", desc)
+
+    parts = [text(28, 40, "ACTIVITY LOG", 17, "#39d353", 'class="mono"'),
+             text(28, 72, f"Coleta: {updated}", 15, "#8b949e")]
+    # Todas as sequências são limitadas ao período retornado pelo calendário.
+    for x, y, value, lines in [(28, 153, current, ["Sequência atual", "dias seguidos"]),
+                               (263, 153, longest, ["Maior sequência", "no período"]),
+                               (28, 290, calendar["totalContributions"], ["Contribuições", "no período"]),
+                               (263, 290, active, ["Dias ativos", f"de {len(days)} dias"])] :
+        parts.append(text(x, y, f"{value:,}".replace(",", "."), 56, "#39d353"))
+        parts.extend(text(x, y+32+i*23, line, 18, "#e6edf3" if i == 0 else "#8b949e") for i, line in enumerate(lines))
+    parts.append('<path d="M28 222H472 M248 96V347" stroke="#30363d"/>')
+    parts.append(text(28, 387, "Últimos 30 dias", 20))
+    recent = days[-30:]
+    maximum = max((day["contributionCount"] for day in recent), default=1) or 1
+    for i, day in enumerate(recent):
+        height = max(2, day["contributionCount"] / maximum * 76)
+        color = "#26a641" if day["contributionCount"] else "#30363d"
+        parts.append(f'<rect x="{28+i*15}" y="{486-height:.2f}" width="11" height="{height:.2f}" rx="2" fill="{color}"><title>{day["date"]}: {day["contributionCount"]} contribuições</title></rect>')
+    start, end = (datetime.fromisoformat(day["date"]).strftime("%d/%m/%Y") for day in (days[0], days[-1]))
+    parts += [text(28, 516, f"Período: {start} — {end}", 14, "#8b949e"),
+              text(28, 541, "Fonte: calendário de contribuições do GitHub", 14, "#8b949e")]
+    write("streak-stats.svg", 500, 560, "".join(parts), "Minha atividade no GitHub",
+          f"Sequência atual: {current} dias; maior sequência no período: {longest} dias; {calendar['totalContributions']} contribuições; {active} dias ativos em {len(days)}. {desc}")
 
 
 def collect_public_commits(user):

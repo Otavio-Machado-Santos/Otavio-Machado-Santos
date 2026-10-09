@@ -1,21 +1,24 @@
 <div align="center">
 
+### `otavio@github ~ $ ./contribuicoes`
+
 <picture>
-  <source media="(prefers-reduced-motion: reduce)" srcset="assets/intro-ascii-static.png">
-  <img src="assets/intro-ascii.gif" width="1200" alt="Retrato de Otávio Machado Santos em caracteres, formado aos poucos. Observabilidade, DevOps e AI Ops.">
+  <source media="(prefers-reduced-motion: reduce)" srcset="assets/contributions-static.svg">
+  <img src="assets/contributions-animated.svg" width="900" alt="Meu calendário real de contribuições no GitHub, montado célula por célula. Inclui commits, pull requests e issues; a data da coleta aparece no gráfico.">
 </picture>
 
-**Analista de Observabilidade Pleno · DevOps e automação · AI Ops**
+### `otavio@github ~ $ whoami`
 
-</div>
+<picture>
+  <source media="(prefers-reduced-motion: reduce)" srcset="assets/portrait-terminal-static.png">
+  <img src="assets/portrait-terminal.gif" width="400" alt="Otávio Machado Santos — retrato ASCII que se forma aos poucos.">
+</picture>
+<img src="assets/streak-stats.svg" width="400" alt="Sequência atual e maior sequência no período, contribuições, dias ativos e atividade diária dos últimos 30 dias, a partir do calendário real do GitHub.">
 
-## Meu histórico no GitHub
+**IA · automação · infraestrutura**
 
-<img src="assets/contributions.svg" width="900" alt="Calendário real de contribuições no último ano, com barras mensais e data de coleta. Inclui commits, pull requests e issues.">
+Construindo ferramentas, testando ideias e aprendendo no caminho.
 
-<div align="center">
-  <img src="assets/github-stats.svg" width="400" alt="Estatísticas de repositórios públicos, contribuições no último ano, estrelas e forks recebidos. A data de coleta aparece no gráfico.">
-  <img src="assets/languages.svg" width="400" alt="Proporção de código por linguagem nos repositórios públicos. A data de coleta aparece no gráfico.">
 </div>
 
 [Explorar minhas contribuições](https://github.com/Otavio-Machado-Santos?tab=overview) · [Ver meus commits públicos](https://github.com/search?q=author%3AOtavio-Machado-Santos&type=commits)
@@ -36,24 +39,23 @@
 
 </details>
 
-<sub>Gráficos coletados da API do GitHub, com data visível. Linguagens representam código dos repositórios públicos. [Atualizar os dados](scripts/README.md).</sub>
+<sub>Dados reais do calendário do GitHub, com data de coleta visível. As sequências são calculadas dentro do período exibido. [Atualizar os dados](scripts/README.md).</sub>
 
 <div align="center">
 
 [![LinkedIn](assets/linkedin.svg)](https://linkedin.com/in/ot%C3%A1vio-machado-santos)
 [![E-mail](assets/email.svg)](mailto:otaviomachado2003@gmail.com)
+[X · @Machadokkj](https://x.com/Machadokkj)
 
-Araraquara/SP · Brasil · [Flowbix](https://flowbix.com.br)
+Araraquara/SP · Brasil
 
 </div>
 
 ## Sobre mim
 
-Atuo na **Flowbix desde 2022**, conectando observabilidade, automação e inteligência artificial em ambientes de infraestrutura. Integro **Zabbix, Grafana, Python, n8n e LLMs** para transformar alertas em contexto e apoiar as operações.
+Gosto de transformar problemas em ferramentas que funcionam. Construo projetos com **IA, automação e infraestrutura**, de agentes e integrações a dashboards e aplicações desktop.
 
-Minha visão de produto aplicada à infraestrutura aparece em dashboards de NOC, pipelines de automação e ferramentas para operar sistemas com mais clareza. Tenho interesse especial em **IA aplicada às operações**, com isolamento de credenciais e atenção ao ambiente real.
-
-Aberto a **freelas, oportunidades CLT/PJ e colaborações** em observabilidade, automação e AI Ops.
+Uso **Python, Rust, TypeScript, Zabbix, Grafana, n8n e LLMs** para explorar ideias e melhorar operações. Compartilho os projetos aqui e o processo no [X](https://x.com/Machadokkj).
 
 ## Tecnologias
 
@@ -100,21 +102,21 @@ Agente conversacional com consultas dinâmicas sobre dados de incidentes em temp
 
 - **NOC AI Dashboard:** Zabbix, Grafana e LLMs para análise de incidentes, com automações em n8n e painéis customizados.
 - **GrafanaAI Studio:** aplicação desktop com Tauri, Rust, React e TypeScript para edição assistida de dashboards, com credenciais isoladas por projeto.
-- **Flowbix AI NOC Copilot:** agente conversacional em n8n e LangChain sobre uma base de incidentes ativos.
+- **AI NOC Copilot:** agente conversacional em n8n e LangChain sobre uma base de incidentes ativos.
 
 </details>
 
 ## Certificações
 
 - **Linux Essentials** — Linux Professional Institute (LPI), novembro de 2024.
-- **Tuning em Zabbix** — Flowbix, 2024.
+- **Tuning em Zabbix** — 2024.
 
 ---
 
 <div align="center">
 
-**Vamos conversar sobre observabilidade, automação e IA?**
+**Ideias em construção. Código e progresso por aqui.**
 
-[LinkedIn](https://linkedin.com/in/ot%C3%A1vio-machado-santos) · [otaviomachado2003@gmail.com](mailto:otaviomachado2003@gmail.com)
+[X](https://x.com/Machadokkj) · [LinkedIn](https://linkedin.com/in/ot%C3%A1vio-machado-santos) · [otaviomachado2003@gmail.com](mailto:otaviomachado2003@gmail.com)
 
 </div>
