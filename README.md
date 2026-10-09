@@ -15,7 +15,7 @@
 </picture>
 <img src="assets/streak-stats.svg" width="400" alt="Sequência atual e maior sequência no período, contribuições, dias ativos e atividade diária dos últimos 30 dias, a partir do calendário real do GitHub.">
 
-**IA · automação · infraestrutura**
+**Observabilidade · IA · automação · infraestrutura**
 
 Construindo ferramentas, testando ideias e aprendendo no caminho.
 
@@ -45,17 +45,17 @@ Construindo ferramentas, testando ideias e aprendendo no caminho.
 
 [![LinkedIn](assets/linkedin.svg)](https://linkedin.com/in/ot%C3%A1vio-machado-santos)
 [![E-mail](assets/email.svg)](mailto:otaviomachado2003@gmail.com)
-[X · @Machadokkj](https://x.com/Machadokkj)
-
-Araraquara/SP · Brasil
+[![X · @Machadokkj](assets/x-social.svg)](https://x.com/Machadokkj)
 
 </div>
 
 ## Sobre mim
 
-Gosto de transformar problemas em ferramentas que funcionam. Construo projetos com **IA, automação e infraestrutura**, de agentes e integrações a dashboards e aplicações desktop.
+Gosto de transformar problemas em ferramentas que funcionam. Construo projetos que conectam **observabilidade, automação e IA**, de agentes e integrações a dashboards e aplicações desktop.
 
-Uso **Python, Rust, TypeScript, Zabbix, Grafana, n8n e LLMs** para explorar ideias e melhorar operações. Compartilho os projetos aqui e o processo no [X](https://x.com/Machadokkj).
+Em observabilidade, gosto de conectar **métricas, logs, traces e erros** para entender o comportamento da infraestrutura e das aplicações, investigar incidentes e dar contexto às operações.
+
+Uso **Python, Rust, TypeScript, n8n e LLMs** para explorar ideias e reduzir trabalho repetitivo. Compartilho os projetos aqui e o processo no [X](https://x.com/Machadokkj).
 
 ## Tecnologias
 
@@ -63,6 +63,14 @@ Uso **Python, Rust, TypeScript, Zabbix, Grafana, n8n e LLMs** para explorar idei
 
 ![Zabbix](assets/zabbix.svg)
 ![Grafana](assets/grafana.svg)
+![Prometheus](assets/prometheus.svg)
+![Sentry](assets/sentry.svg)
+![OpenTelemetry](assets/opentelemetry.svg)
+
+</div>
+
+<div align="center">
+
 ![Python](assets/python.svg)
 ![n8n](assets/n8n.svg)
 ![Docker](assets/docker.svg)
@@ -72,7 +80,9 @@ Uso **Python, Rust, TypeScript, Zabbix, Grafana, n8n e LLMs** para explorar idei
 
 | Área | Ferramentas |
 | :--- | :--- |
-| Observabilidade | Zabbix, Grafana, Prometheus |
+| Métricas, monitoramento e alertas | Zabbix, Grafana, Prometheus |
+| Erros e desempenho de aplicações | [Sentry](https://sentry.io/product/error-monitoring/), análise de erros e contexto de execução |
+| Instrumentação e telemetria | [OpenTelemetry](https://opentelemetry.io/docs/concepts/signals/), OTLP, Collector, métricas, logs e traces |
 | Automação e IA | Python, n8n, LangChain, LLMs, Shell, PowerShell |
 | DevOps e infraestrutura | Docker, Kubernetes, Linux, Proxmox, VMware, Nginx, AWS, Azure |
 | Desenvolvimento e dados | Rust, TypeScript, JavaScript, React, Tauri, MySQL, PostgreSQL, MariaDB |
@@ -117,6 +127,8 @@ Agente conversacional com consultas dinâmicas sobre dados de incidentes em temp
 
 **Ideias em construção. Código e progresso por aqui.**
 
-[X](https://x.com/Machadokkj) · [LinkedIn](https://linkedin.com/in/ot%C3%A1vio-machado-santos) · [otaviomachado2003@gmail.com](mailto:otaviomachado2003@gmail.com)
+[![LinkedIn](assets/linkedin.svg)](https://linkedin.com/in/ot%C3%A1vio-machado-santos)
+[![E-mail](assets/email.svg)](mailto:otaviomachado2003@gmail.com)
+[![X · @Machadokkj](assets/x-social.svg)](https://x.com/Machadokkj)
 
 </div>
