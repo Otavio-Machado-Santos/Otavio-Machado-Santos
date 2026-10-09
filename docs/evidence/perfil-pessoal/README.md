@@ -12,3 +12,15 @@ Validação: 370 datas únicas e consecutivas; soma das células igual às 2.083
 Nome, bio, Empresa e X foram salvos na sessão pessoal do GitHub e confirmados na API pública: Otavio Machado; bio sobre IA, automação e infraestrutura; Empresa vazio; @Machadokkj. A sessão do GitHub CLI não precisou receber novos escopos.
 
 O X não pôde ser lido anonimamente. A direção do texto vem do material enviado pelo titular e dos projetos públicos; não foi inferida de posts inacessíveis.
+
+## Publicado
+
+[PR #2](https://github.com/Otavio-Machado-Santos/Otavio-Machado-Santos/pull/2) integrado em `a5a384c43fcb6e004509cfe1bbdf16e9d95b4e58`. O README de `main` foi comparado com a API; nome, bio, Empresa vazio e X foram novamente confirmados na API pública e no perfil anônimo.
+
+- [Entrada e calendário](publicado-entrada.png).
+- [Retrato completo e resumo da atividade](publicado-retrato.png).
+- [Commits reais expandidos](publicado-commits.png).
+- [Perfil público em 390 px](publicado-mobile.png), sem rolagem horizontal.
+- [GIF da execução no perfil público](publicado-real.gif). A gravação mostra carregamento, montagem do calendário, montagem do retrato e abertura dos commits; foi cortado apenas um intervalo ocioso entre etapas.
+
+As imagens dos cards e dos contatos carregaram no perfil publicado. O teste de movimento reduzido selecionou os dois arquivos estáticos de `main`. As capturas são do GitHub real; o retrato artístico é parte da interface, não uma simulação da execução.
