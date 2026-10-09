@@ -15,7 +15,7 @@
 </picture>
 <img src="assets/streak-stats.svg" width="400" alt="Sequência atual e maior sequência no período, contribuições, dias ativos e atividade diária dos últimos 30 dias, a partir do calendário real do GitHub.">
 
-**just a crazy builder**
+**IA · automação · infraestrutura**
 
 Construindo ferramentas, testando ideias e aprendendo no caminho.
 
