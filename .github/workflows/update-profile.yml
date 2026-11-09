@@ -4,8 +4,6 @@ on:
   schedule:
     - cron: "17 9 * * *" # 06:17 em Brasília
   workflow_dispatch:
-  push:
-    branches: [proposta/visual-contribuicao-real] # validação temporária antes do merge
 
 permissions:
   contents: write
