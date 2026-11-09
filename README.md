@@ -3,7 +3,7 @@
 <a href="https://github.com/Otavio-Machado-Santos?tab=overview">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/contributions-dark.svg">
-  <img src="assets/contributions-light.svg" width="100%" alt="Meu calendário de contribuições do GitHub no último ano, com os mesmos dados e níveis do gráfico oficial, atualizado todo dia.">
+  <img src="assets/contributions-light.svg" width="100%" alt="Meu calendário de contribuições do GitHub no último ano, com os mesmos dados e níveis do gráfico oficial, atualizado de hora em hora.">
 </picture>
 </a>
 
@@ -70,5 +70,5 @@ Em observabilidade, conecto **métricas, logs, traces e erros** para entender o 
 ---
 
 <div align="center">
-<sub>Calendário e números vêm da API do GitHub e são regerados todo dia por um <a href="scripts/README.md">workflow deste repositório</a>, sem serviços externos.</sub>
+<sub>Calendário e números vêm do próprio GitHub e são regerados de hora em hora por um <a href="scripts/README.md">workflow deste repositório</a>, sem serviços externos.</sub>
 </div>

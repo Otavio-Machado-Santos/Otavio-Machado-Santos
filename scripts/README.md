@@ -1,8 +1,8 @@
 # Cards do perfil
 
-Os SVGs em `assets/` são gerados por `scripts/update-profile.py` a partir da API do GitHub e servidos pelo próprio repositório, sem serviço externo de estatísticas.
+Os SVGs em `assets/` são gerados por `scripts/update-profile.py` a partir do widget de contribuições e da API do GitHub e servidos pelo próprio repositório, sem serviço externo de estatísticas.
 
-O workflow `.github/workflows/update-profile.yml` roda o script todo dia às 06:17 (Brasília) e publica os cards quando mudam. O commit é do `github-actions[bot]` e não entra no meu calendário de contribuições. Para rodar na hora, use *Run workflow* na aba Actions ou, localmente, com Python 3.9+ e GitHub CLI autenticado:
+O workflow `.github/workflows/update-profile.yml` roda o script de hora em hora e publica os cards quando mudam. O commit é do `github-actions[bot]` e não entra no meu calendário de contribuições. Para rodar na hora, use *Run workflow* na aba Actions ou, localmente, com Python 3.9+ e GitHub CLI autenticado:
 
 ```sh
 python3 scripts/update-profile.py
@@ -11,7 +11,7 @@ git diff --stat
 
 O que cada card mostra:
 
-- `contributions-*.svg`: o calendário de contribuições do último ano, com as células, os níveis e as cores que o GitHub usa. O total inclui repositórios privados porque o perfil exibe contribuições privadas.
+- `contributions-*.svg`: cópia do calendário de contribuições do perfil. Os dados vêm do próprio widget do GitHub (`github.com/users/<login>/contributions`), então total, células e níveis são os mesmos do gráfico nativo. Se o GitHub mudar o formato do widget, o script falha sem alterar os cards.
 - `activity.svg`: dias ativos, sequência atual, maior sequência e melhor dia dentro do período do calendário, mais as contribuições dos últimos 12 meses. A sequência atual pode terminar ontem enquanto o dia de hoje está em andamento.
 - `stack-*.svg`, `project-*.svg` e `contact-*.svg`: conteúdo definido nas listas `STACK`, `PROJECTS` e `CONTACTS` no início do script. Linguagem e estrelas dos projetos vêm da API.
 
