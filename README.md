@@ -1,12 +1,5 @@
 <div align="center">
 
-<a href="https://github.com/Otavio-Machado-Santos?tab=overview">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/contributions-dark.svg">
-  <img src="assets/contributions-light.svg" width="100%" alt="Meu calendário de contribuições do GitHub no último ano, com os mesmos dados e níveis do gráfico oficial, atualizado de hora em hora.">
-</picture>
-</a>
-
 <picture>
   <source media="(prefers-reduced-motion: reduce)" srcset="assets/portrait-terminal-static.png">
   <img src="assets/portrait-terminal.gif" width="300" alt="Otávio Machado Santos — retrato ASCII que se forma aos poucos.">
@@ -70,5 +63,5 @@ Em observabilidade, conecto **métricas, logs, traces e erros** para entender o 
 ---
 
 <div align="center">
-<sub>Calendário e números vêm do próprio GitHub e são regerados de hora em hora por um <a href="scripts/README.md">workflow deste repositório</a>, sem serviços externos.</sub>
+<sub>Os números de atividade vêm do próprio GitHub e são regerados de hora em hora por um <a href="scripts/README.md">workflow deste repositório</a>, sem serviços externos.</sub>
 </div>
