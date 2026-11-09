@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
-"""Atualiza os cards locais a partir da API do GitHub, sem GitHub Actions.
+"""Gera os cards do perfil a partir da API do GitHub.
 
 Uso: gh auth login; python3 scripts/update-profile.py
-Ou: python3 scripts/update-profile.py --data /caminho/dados.json
-O modo --data permite renderizar uma coleta já realizada, sem nova consulta.
+Ou: python3 scripts/update-profile.py --data /caminho/dados.json [--date DD/MM/AAAA]
+O modo --data renderiza uma coleta já realizada, sem nova consulta.
+O workflow .github/workflows/update-profile.yml roda este script todo dia.
 """
 
 import argparse
-from collections import defaultdict
 from datetime import datetime, timedelta
 from html import escape
 import json
 from pathlib import Path
 import re
 import subprocess
+import textwrap
 from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,94 +23,82 @@ USERNAME = "Otavio-Machado-Santos"
 QUERY = '''query { user(login: "Otavio-Machado-Santos") {
   login
   repositories(first: 100, ownerAffiliations: OWNER, privacy: PUBLIC, isFork: false) {
-    totalCount pageInfo { hasNextPage }
-    nodes { name stargazerCount forkCount languages(first: 100) {
-      pageInfo { hasNextPage } edges { size node { name color } }
-    } }
+    pageInfo { hasNextPage }
+    nodes { name stargazerCount primaryLanguage { name color } }
   }
   contributionsCollection { contributionCalendar {
     totalContributions weeks { contributionDays { date contributionCount contributionLevel } }
   } }
 } }'''
 
+SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif"
+MONO = "ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace"
+MONO_EM = 0.602  # largura do caractere nas fontes monoespaçadas acima
+MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
+LEVELS = ["NONE", "FIRST_QUARTILE", "SECOND_QUARTILE", "THIRD_QUARTILE", "FOURTH_QUARTILE"]
+# Cores do próprio calendário do GitHub em cada tema.
+THEMES = {
+    "dark": {"border": "#30363d", "ink": "#e6edf3", "muted": "#8b949e", "link": "#4493f8", "chip": "#161b22",
+             "levels": ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"]},
+    "light": {"border": "#d0d7de", "ink": "#1f2328", "muted": "#59636e", "link": "#0969da", "chip": "#f6f8fa",
+              "levels": ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"]},
+}
+TERMINAL = {"bg": "#0d1117", "green": "#39d353", "bar": "#2ea043", "accent": "#f46800"}  # cores do retrato
 
-def svg(width, height, content, title, desc=""):
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-labelledby="title desc">
-<title id="title">{escape(title)}</title><desc id="desc">{escape(desc)}</desc>
-<style>text{{font-family:Arial,Helvetica,sans-serif}}.mono{{font-family:Consolas,Menlo,monospace}}.muted{{fill:#8b949e}}.label{{fill:#e6edf3}}@media(prefers-reduced-motion:reduce){{.pulse{{animation:none}}}}</style>
-<rect x="1" y="1" width="{width-2}" height="{height-2}" rx="14" fill="#0d1117" stroke="#30363d"/>
-{content}</svg>'''
+# Conteúdo editorial: o que aparece nos cards de projeto e de stack.
+PROJECTS = [
+    ("royal-mcp", "Royal MCP",
+     "Fronteira de confiança para operar hosts SSH a partir de inventários do Royal TS/TSX, com isolamento de credenciais.",
+     ["MCP", "SSH"]),
+    ("Organizer_brain", "Caderno",
+     "App nativo para macOS e iOS: captura rápida, rotina do dia e entregas do GitHub com revisão gerada por IA.",
+     ["SwiftUI", "SwiftData"]),
+    ("Scripts-Olt-Vsol-Cpu-Temp-SSH", "Monitoramento de OLTs VSOL",
+     "Scripts para coletar temperatura de CPU por SSH e integrar os dados ao monitoramento do Zabbix.",
+     ["Zabbix", "SSH"]),
+    ("agentLangchainGroqV1", "Agente LangChain + Groq",
+     "Agente conversacional com consultas dinâmicas sobre dados de incidentes em tempo real.",
+     ["LangChain", "Groq"]),
+]
+# Dois cards lado a lado no desktop; em tela estreita, um embaixo do outro.
+STACK = [
+    [("Métricas e alertas", ["Zabbix", "Grafana", "Prometheus"]),
+     ("Erros e telemetria", ["Sentry", "OpenTelemetry", "OTLP", "Collector"]),
+     ("Automação e IA", ["Python", "n8n", "LangChain", "LLMs", "Shell", "PowerShell"])],
+    [("DevOps e infra", ["Docker", "Kubernetes", "Linux", "Proxmox", "VMware", "Nginx", "AWS", "Azure"]),
+     ("Dev e dados", ["Rust", "TypeScript", "JavaScript", "React", "Tauri", "MySQL", "PostgreSQL", "MariaDB"])],
+]
+CONTACTS = [("linkedin", "LinkedIn"), ("email", "E-mail"), ("x", "X · @Machadokkj")]
+
+REPO_ICON = "M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z"
+STAR_ICON = "M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"
 
 
-def text(x, y, value, size=16, fill="#e6edf3", extra=""):
+def number(value):
+    return f"{value:,}".replace(",", ".")
+
+
+def text(x, y, value, size, fill, extra=""):
     return f'<text x="{x}" y="{y}" font-size="{size}" fill="{fill}" {extra}>{escape(str(value))}</text>'
 
 
-def write(name, width, height, content, title, desc=""):
-    (ASSETS / name).write_text(svg(width, height, content, title, desc), encoding="utf-8")
-
-
-def render(user, updated):
-    repos = user["repositories"]
-    if repos.get("pageInfo", {}).get("hasNextPage"):
-        raise ValueError("Mais de 100 repositórios: pagine a consulta antes de atualizar os cards.")
-    calendar = user["contributionsCollection"]["contributionCalendar"]
-    nodes = repos["nodes"]
+def write(name, width, height, content, title, background="none", border="#30363d"):
     ASSETS.mkdir(exist_ok=True)
-    stats = [("Repositórios públicos", repos["totalCount"]),
-             ("Contribuições no ano", calendar["totalContributions"]),
-             ("Estrelas recebidas", sum(r["stargazerCount"] for r in nodes)),
-             ("Forks recebidos", sum(r["forkCount"] for r in nodes))]
-    parts = [text(26, 36, "Atividade no GitHub", 21),
-             text(26, 60, f"Dados coletados em {updated}", 12, "#8b949e")]
-    for i, (label, number) in enumerate(stats):
-        x = 28 + (i % 2) * 213
-        y = 113 + (i // 2) * 83
-        parts += [text(x, y, f"{number:,}".replace(",", "."), 32, "#39d353"),
-                  text(x, y + 23, label, 13, "#8b949e")]
-    write("github-stats.svg", 460, 250, "".join(parts), "Atividade no GitHub", "; ".join(f"{a}: {b}" for a, b in stats))
-
-    languages = defaultdict(int)
-    colors = {}
-    for repo in nodes:
-        if repo["languages"].get("pageInfo", {}).get("hasNextPage"):
-            raise ValueError("Mais de 100 linguagens: pagine a consulta antes de atualizar.")
-        for edge in repo["languages"]["edges"]:
-            lang = edge["node"]["name"]
-            languages[lang] += edge["size"]
-            colors[lang] = edge["node"]["color"] or "#8b949e"
-    ordered = sorted(languages.items(), key=lambda item: item[1], reverse=True)
-    total = sum(languages.values())
-    parts = [text(26, 36, "Linguagens nos projetos", 21),
-             text(26, 60, "Proporção de código nos repositórios públicos", 12, "#8b949e")]
-    x = 28
-    if total:
-        for lang, size in ordered:
-            width = size / total * 404
-            parts.append(f'<rect x="{x:.3f}" y="85" width="{width:.3f}" height="10" fill="{colors[lang]}"/>')
-            x += width
-        for i, (lang, size) in enumerate(ordered[:6]):
-            x = 28 + i % 2 * 213
-            y = 127 + i // 2 * 32
-            parts += [f'<circle cx="{x+5}" cy="{y-5}" r="4" fill="{colors[lang]}"/>',
-                      text(x+18, y, f"{lang}  {size/total*100:.1f}%", 13)]
-    else:
-        parts.append(text(28, 130, "Sem código público classificado.", 14, "#8b949e"))
-    parts.append(text(26, 229, f"Coleta: {updated} · fonte: API do GitHub", 12, "#8b949e"))
-    write("languages.svg", 460, 250, "".join(parts), "Linguagens nos repositórios públicos", "; ".join(f"{k}: {v} bytes" for k, v in ordered))
-
-    render_activity(calendar, updated)
+    (ASSETS / name).write_text(
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="{escape(title)}">\n'
+        f'<title>{escape(title)}</title>\n'
+        f'<style>text{{font-family:{SANS}}}.mono{{font-family:{MONO}}}</style>\n'
+        f'<rect x=".5" y=".5" width="{width-1}" height="{height-1}" rx="8" fill="{background}" stroke="{border}"/>\n'
+        f'{content}\n</svg>\n', encoding="utf-8")
 
 
 def activity_summary(calendar):
     days = sorted((day for week in calendar["weeks"] for day in week["contributionDays"]), key=lambda day: day["date"])
     if not days:
         raise ValueError("Calendário vazio.")
-    if len({day["date"] for day in days}) != len(days):
-        raise ValueError("O calendário contém datas duplicadas.")
     for previous, day in zip(days, days[1:]):
         if datetime.fromisoformat(day["date"]) - datetime.fromisoformat(previous["date"]) != timedelta(days=1):
-            raise ValueError("Há uma lacuna no calendário retornado pela API.")
+            raise ValueError("Há uma lacuna ou data repetida no calendário retornado pela API.")
     if sum(day["contributionCount"] for day in days) != calendar["totalContributions"]:
         raise ValueError("O total de contribuições não corresponde às células do calendário.")
     current = longest = run = 0
@@ -117,84 +106,156 @@ def activity_summary(calendar):
         run = run + 1 if day["contributionCount"] else 0
         longest = max(longest, run)
     # Um dia ainda em andamento sem contribuição não interrompe a sequência de ontem.
-    eligible = days if days[-1]["contributionCount"] else days[:-1]
-    for day in reversed(eligible):
+    for day in reversed(days if days[-1]["contributionCount"] else days[:-1]):
         if not day["contributionCount"]:
             break
         current += 1
-    return days, current, longest, sum(bool(day["contributionCount"]) for day in days)
+    return days, current, longest
+
+
+def render_calendar(calendar, updated):
+    """O calendário de contribuições como o GitHub o desenha: mesmas células, níveis e cores."""
+    weeks = calendar["weeks"]
+    pitch, left, top = 15, 54, 76
+    width, height = left + len(weeks) * pitch - 3 + 24, 222
+    for theme, c in THEMES.items():
+        parts = [f'<text x="24" y="40"><tspan font-size="20" font-weight="600" fill="{c["ink"]}">{number(calendar["totalContributions"])}</tspan>'
+                 f'<tspan font-size="14" fill="{c["muted"]}" dx="7">contribuições no último ano</tspan></text>',
+                 text(width - 24, 39, f"atualizado em {updated}", 12, c["muted"], 'text-anchor="end"')]
+        for row, label in [(1, "seg"), (3, "qua"), (5, "sex")]:
+            parts.append(text(24, top + row * pitch + 10, label, 11, c["muted"]))
+        last_month, last_label = None, -9
+        for col, week in enumerate(weeks):
+            first = datetime.fromisoformat(week["contributionDays"][0]["date"])
+            if (first.year, first.month) != last_month:
+                last_month = (first.year, first.month)
+                # A primeira coluna pode ser o resto de um mês: só rotula quando há espaço.
+                starts_soon = col == 0 and first.day > 14
+                if col - last_label >= 3 and not starts_soon:
+                    parts.append(text(left + col * pitch, top - 10, MONTHS[first.month - 1], 11, c["muted"]))
+                    last_label = col
+            for day in week["contributionDays"]:
+                row = (datetime.fromisoformat(day["date"]).weekday() + 1) % 7
+                fill = c["levels"][LEVELS.index(day["contributionLevel"])]
+                parts.append(f'<rect x="{left + col * pitch}" y="{top + row * pitch}" width="12" height="12" rx="2.5" fill="{fill}"/>')
+        footer = top + 7 * pitch + 23
+        parts.append(text(24, footer, "Calendário do GitHub, incluindo repositórios privados", 12, c["muted"]))
+        legend = width - 24 - 31 - 5 * pitch
+        parts.append(text(legend - 8, footer, "Menos", 11, c["muted"], 'text-anchor="end"'))
+        for i, fill in enumerate(c["levels"]):
+            parts.append(f'<rect x="{legend + i * pitch}" y="{footer - 10}" width="12" height="12" rx="2.5" fill="{fill}"/>')
+        parts.append(text(width - 24, footer, "Mais", 11, c["muted"], 'text-anchor="end"'))
+        write(f"contributions-{theme}.svg", width, height, "".join(parts),
+              f"{number(calendar['totalContributions'])} contribuições no último ano", border=c["border"])
 
 
 def render_activity(calendar, updated):
-    days, current, longest, active = activity_summary(calendar)
-    levels = {"NONE": "#161b22", "FIRST_QUARTILE": "#0e4429", "SECOND_QUARTILE": "#006d32", "THIRD_QUARTILE": "#26a641", "FOURTH_QUARTILE": "#39d353"}
-    weeks = calendar["weeks"]
-    month_names = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
-    parts = [text(27, 33, "Meu histórico de contribuições", 19),
-             text(873, 33, f"{calendar['totalContributions']:,}".replace(",", ".") + " contribuições", 18, "#39d353", 'text-anchor="end"')]
-    for row, label in [(1, "seg"), (3, "qua"), (5, "sex")]:
-        parts.append(text(13, 75 + row * 16, label, 10, "#8b949e"))
-    last_month = None
-    cells = []
-    for col, week in enumerate(weeks):
-        for day in week["contributionDays"]:
-            date = datetime.fromisoformat(day["date"])
-            row = (date.weekday() + 1) % 7
-            x, y = 39 + col * 16, 64 + row * 16
-            month = (date.year, date.month)
-            if month != last_month:
-                if col < len(weeks) - 2:
-                    parts.append(text(x, 55, month_names[date.month - 1], 10, "#8b949e"))
-                last_month = month
-            delay = col * 0.065 + row * 0.036
-            cells.append((x, y, levels[day["contributionLevel"]], delay, day))
-    parts.append(text(27, 192, f"Coleta: {updated} · GitHub · commits, PRs e issues", 11, "#8b949e"))
-    parts.append(text(729, 192, "menos", 10, "#8b949e"))
-    for i, color in enumerate(levels.values()):
-        parts.append(f'<rect x="{767+i*16}" y="181" width="12" height="12" rx="2" fill="{color}"/>')
-    parts.append(text(855, 192, "mais", 10, "#8b949e"))
-    motion = '''<style>
-.day{transform-box:fill-box;transform-origin:center;animation:assemble .5s ease-out both}
-.lit{animation:glow .75s ease-out both}
-@keyframes assemble{0%{opacity:0;transform:scale(.15)}70%{opacity:1;transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
-@keyframes glow{0%,45%{filter:brightness(2.2)}100%{filter:brightness(1)}}
-@media(prefers-reduced-motion:reduce){.day,.lit{animation:none}}
-</style>'''
-    desc = f"Calendário de {days[0]['date']} a {days[-1]['date']}, com dados reais do GitHub. Inclui commits, pull requests e issues."
-    for animated in (False, True):
-        rendered = []
-        for x, y, color, delay, day in cells:
-            rect = f'<rect x="{x}" y="{y}" width="13" height="13" rx="2" fill="{color}"><title>{day["date"]}: {day["contributionCount"]} contribuições</title></rect>'
-            if animated:
-                if day["contributionCount"]:
-                    rect = f'<g class="lit" style="animation-delay:{delay:.3f}s">{rect}</g>'
-                rect = f'<g class="day" style="animation-delay:{delay:.3f}s">{rect}</g>'
-            rendered.append(rect)
-        write("contributions-animated.svg" if animated else "contributions-static.svg", 900, 210,
-              (motion if animated else "") + "".join(parts + rendered), "Meu calendário de contribuições", desc)
+    """Card de terminal ao lado do retrato: mesma altura e moldura, sempre escuro."""
+    days, current, longest = activity_summary(calendar)
+    c, t = THEMES["dark"], TERMINAL
+    best = max(days, key=lambda day: day["contributionCount"])
+    best_date = datetime.fromisoformat(best["date"]).strftime("%d/%m")
+    parts = [text(22, 27, "otavio@github ~ $ ./atividade", 12, t["green"], 'class="mono"'),
+             text(498, 27, updated, 11, c["muted"], 'class="mono" text-anchor="end"')]
+    stats = [(number(sum(bool(day["contributionCount"]) for day in days)), "dias ativos"),
+             (number(current), "sequência atual"),
+             (number(longest), "maior sequência"),
+             (number(best["contributionCount"]), f"melhor dia · {best_date}")]
+    for i, (value, label) in enumerate(stats):
+        x = 22 + i * 122
+        parts += [text(x, 78, value, 28, c["ink"], 'font-weight="600"'), text(x, 98, label, 12, c["muted"])]
+    parts.append(f'<path d="M22 118H498" stroke="{c["border"]}"/>')
+    parts.append(text(22, 144, "Contribuições por mês", 13, c["ink"], 'font-weight="600"'))
 
-    parts = [text(28, 40, "ACTIVITY LOG", 17, "#39d353", 'class="mono"'),
-             text(28, 72, f"Coleta: {updated}", 15, "#8b949e")]
-    # Todas as sequências são limitadas ao período retornado pelo calendário.
-    for x, y, value, lines in [(28, 153, current, ["Sequência atual", "dias seguidos"]),
-                               (263, 153, longest, ["Maior sequência", "no período"]),
-                               (28, 290, calendar["totalContributions"], ["Contribuições", "no período"]),
-                               (263, 290, active, ["Dias ativos", f"de {len(days)} dias"])] :
-        parts.append(text(x, y, f"{value:,}".replace(",", "."), 56, "#39d353"))
-        parts.extend(text(x, y+32+i*23, line, 18, "#e6edf3" if i == 0 else "#8b949e") for i, line in enumerate(lines))
-    parts.append('<path d="M28 222H472 M248 96V347" stroke="#30363d"/>')
-    parts.append(text(28, 387, "Últimos 30 dias", 20))
-    recent = days[-30:]
-    maximum = max((day["contributionCount"] for day in recent), default=1) or 1
-    for i, day in enumerate(recent):
-        height = max(2, day["contributionCount"] / maximum * 76)
-        color = "#26a641" if day["contributionCount"] else "#30363d"
-        parts.append(f'<rect x="{28+i*15}" y="{486-height:.2f}" width="11" height="{height:.2f}" rx="2" fill="{color}"><title>{day["date"]}: {day["contributionCount"]} contribuições</title></rect>')
-    start, end = (datetime.fromisoformat(day["date"]).strftime("%d/%m/%Y") for day in (days[0], days[-1]))
-    parts += [text(28, 516, f"Período: {start} — {end}", 14, "#8b949e"),
-              text(28, 541, "Fonte: calendário de contribuições do GitHub", 14, "#8b949e")]
-    write("streak-stats.svg", 500, 560, "".join(parts), "Minha atividade no GitHub",
-          f"Sequência atual: {current} dias; maior sequência no período: {longest} dias; {calendar['totalContributions']} contribuições; {active} dias ativos em {len(days)}. {desc}")
+    totals = {}
+    for day in days:
+        totals[day["date"][:7]] = totals.get(day["date"][:7], 0) + day["contributionCount"]
+    months = sorted(totals)[-12:]  # descarta o mês parcial do início do período
+    peak = max(totals[m] for m in months) or 1
+    base, tall, step, bar = 286, 104, 476 / len(months), 22
+    for i, month in enumerate(months):
+        x = 22 + i * step + (step - bar) / 2
+        h = totals[month] / peak * tall
+        if h < 3:
+            parts.append(f'<rect x="{x:.1f}" y="{base - 2}" width="{bar}" height="2" fill="{c["border"]}"/>')
+        else:
+            r = min(4, h)
+            parts.append(f'<path d="M{x:.1f} {base}v{-(h - r):.1f}a{r} {r} 0 0 1 {r} {-r}h{bar - 2 * r}a{r} {r} 0 0 1 {r} {r}v{h - r:.1f}z" fill="{t["bar"]}"/>')
+        if totals[month] == peak:
+            parts.append(text(f"{x + bar / 2:.1f}", f"{base - h - 7:.1f}", number(totals[month]), 11, c["ink"], 'text-anchor="middle" font-weight="600"'))
+        parts.append(text(f"{x + bar / 2:.1f}", base + 17, MONTHS[int(month[5:]) - 1], 11, c["muted"], 'text-anchor="middle"'))
+    parts.append(f'<path d="M22 {base}.5H498" stroke="{c["border"]}"/>')
+    parts.append(f'<path d="M472 319H498" stroke="{t["accent"]}" stroke-width="3"/>')
+    write("activity.svg", 520, 336, "".join(parts),
+          f"Atividade no último ano: {stats[0][0]} dias ativos, sequência atual de {current} dias, maior sequência de {longest} dias, "
+          f"melhor dia com {stats[3][0]} contribuições. Contribuições por mês: "
+          + ", ".join(f"{MONTHS[int(m[5:]) - 1]} {totals[m]}" for m in months) + ".",
+          background=t["bg"])
+
+
+def pills(labels, x, y, c, size=12.5, height=26, pad=10, gap=8, limit=None):
+    """Desenha etiquetas monoespaçadas, quebrando a linha em `limit`. Devolve (svg, y final, largura)."""
+    parts, cursor = [], x
+    for label in labels:
+        w = round(len(label) * size * MONO_EM + 2 * pad)
+        if limit and cursor + w > limit and cursor > x:
+            cursor, y = x, y + height + gap
+        parts.append(f'<rect x="{cursor}.5" y="{y}.5" width="{w}" height="{height}" rx="6" fill="{c["chip"]}" stroke="{c["border"]}"/>'
+                     + text(cursor + pad, y + height / 2 + size * 0.36, label, size, c["ink"], 'class="mono"'))
+        cursor += w + gap
+    return "".join(parts), y, cursor - gap - x
+
+
+def render_stack():
+    width = 420
+    for theme, c in THEMES.items():
+        cards = []
+        for groups in STACK:
+            parts, y = [], 20
+            for area, tools in groups:
+                chips, end, _ = pills(tools, 20, y + 20, c, limit=width - 20)
+                parts += [text(20, y + 10, area, 12, c["muted"]), chips]
+                y = end + 26 + 18
+            cards.append((parts, y, groups))
+        height = max(y for _, y, _ in cards)
+        for i, (parts, _, groups) in enumerate(cards, 1):
+            write(f"stack-{i}-{theme}.svg", width, height, "".join(parts),
+                  "; ".join(f"{area}: {', '.join(tools)}" for area, tools in groups), border=c["border"])
+
+
+def render_projects(repositories):
+    by_name = {repo["name"]: repo for repo in repositories}
+    for name, title, description, tags in PROJECTS:
+        repo = by_name[name]  # falha se um projeto em destaque deixar de ser público
+        language = repo["primaryLanguage"] or {"name": "", "color": None}
+        lines = textwrap.wrap(description, 54)
+        if len(lines) > 3:
+            raise ValueError(f"Descrição longa demais para o card de {name}.")
+        for theme, c in THEMES.items():
+            parts = [f'<path d="{REPO_ICON}" transform="translate(20 20)" fill="{c["muted"]}"/>',
+                     text(44, 33, title, 15, c["link"], 'font-weight="600"')]
+            parts += [text(20, 60 + i * 19, line, 13, c["ink"]) for i, line in enumerate(lines)]
+            x = 20
+            if language["name"]:
+                parts += [f'<circle cx="{x + 6}" cy="122" r="6" fill="{language["color"] or c["muted"]}"/>',
+                          text(x + 18, 126, language["name"], 12, c["muted"], 'class="mono"')]
+                x += 18 + round(len(language["name"]) * 12 * MONO_EM) + 14
+            for tag in tags:
+                parts.append(text(x, 126, tag, 12, c["muted"], 'class="mono"'))
+                x += round(len(tag) * 12 * MONO_EM) + 14
+            if repo["stargazerCount"]:
+                parts += [f'<path d="{STAR_ICON}" transform="translate(372 111) scale(.85)" fill="{c["muted"]}"/>',
+                          text(400, 126, repo["stargazerCount"], 12, c["muted"], 'class="mono" text-anchor="end"')]
+            write(f"project-{name.lower()}-{theme}.svg", 420, 146, "".join(parts), f"{title}: {description}", border=c["border"])
+
+
+def render_contacts():
+    for theme, c in THEMES.items():
+        for key, label in CONTACTS:
+            chip, _, w = pills([label], 0, 0, c, size=13, height=31, pad=14)
+            (ASSETS / f"contact-{key}-{theme}.svg").write_text(
+                f'<svg xmlns="http://www.w3.org/2000/svg" width="{w + 1}" height="32" viewBox="0 0 {w + 1} 32" role="img" aria-label="{escape(label)}">'
+                f'<title>{escape(label)}</title><style>.mono{{font-family:{MONO}}}</style>{chip}</svg>\n', encoding="utf-8")
 
 
 def collect_public_commits(user):
@@ -210,14 +271,13 @@ def collect_public_commits(user):
     return sorted(commits, key=lambda c: c["date"], reverse=True)[:4]
 
 
-def render_commits(commits, updated):
+def render_commits(commits):
     def markdown(value):
         return re.sub(r'([\\`*\[\]<>])', r'\\\1', value)
     lines = []
     for commit in commits:
         date = datetime.fromisoformat(commit["date"].replace("Z", "+00:00")).astimezone(ZoneInfo("America/Sao_Paulo"))
         lines.append(f'- **{date:%d/%m/%Y} · {markdown(commit["repo"])}:** [{markdown(commit["title"])}]({commit["url"]}) · `{commit["sha"][:7]}`')
-    lines.append(f"\n<sub>Últimos commits de minha autoria nas branches padrão dos projetos públicos, excluindo este README. Coleta: {updated}.</sub>")
     readme = ROOT / "README.md"
     source = readme.read_text(encoding="utf-8")
     start, end = "<!-- public-commits:start -->", "<!-- public-commits:end -->"
@@ -245,11 +305,18 @@ def main():
     user = payload["data"]["user"]
     if user["login"] != USERNAME:
         raise ValueError("A API retornou um usuário diferente do perfil configurado.")
+    if user["repositories"]["pageInfo"]["hasNextPage"]:
+        raise ValueError("Mais de 100 repositórios: pagine a consulta antes de atualizar os cards.")
     updated = args.date or datetime.now(ZoneInfo("America/Sao_Paulo")).strftime("%d/%m/%Y")
-    render(user, updated)
+    calendar = user["contributionsCollection"]["contributionCalendar"]
+    render_calendar(calendar, updated)
+    render_activity(calendar, updated)
+    render_stack()
+    render_projects(user["repositories"]["nodes"])
+    render_contacts()
     commits = payload.get("publicCommits") if args.data else collect_public_commits(user)
     if commits is not None:
-        render_commits(commits, updated)
+        render_commits(commits)
     print(f"Cards de {USERNAME} atualizados. Coleta: {updated}.")
 
 

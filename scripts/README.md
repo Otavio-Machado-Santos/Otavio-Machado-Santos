@@ -1,21 +1,23 @@
-# Atualizar os cards do perfil
+# Cards do perfil
 
-Os SVGs em `assets/` são servidos pelo próprio repositório. Não dependem de um serviço de estatísticas externo e não executam workflows de GitHub Actions.
+Os SVGs em `assets/` são gerados por `scripts/update-profile.py` a partir da API do GitHub e servidos pelo próprio repositório, sem serviço externo de estatísticas.
 
-Para coletar dados atuais, tenha Python 3.9+ e GitHub CLI autenticado:
+O workflow `.github/workflows/update-profile.yml` roda o script todo dia às 06:17 (Brasília) e publica os cards quando mudam. O commit é do `github-actions[bot]` e não entra no meu calendário de contribuições. Para rodar na hora, use *Run workflow* na aba Actions ou, localmente, com Python 3.9+ e GitHub CLI autenticado:
 
 ```sh
 python3 scripts/update-profile.py
 git diff --stat
 ```
 
-Revise e publique os SVGs atualizados pelo Git. Os cards mostram a data de coleta: não são estatísticas em tempo real. As linguagens refletem bytes de código dos repositórios públicos próprios, excluindo forks; não representam nível de domínio. O calendário segue os dados retornados pelo GitHub, sem modificar contribuições.
+O que cada card mostra:
 
-O calendário aparece primeiro, em verde, e se monta célula por célula em cerca de quatro segundos. As células e os níveis de cor vêm da API. O card ao lado do retrato mostra contribuições, dias ativos, sequência atual, maior sequência dentro do período e os últimos 30 dias. A sequência atual pode terminar ontem enquanto o dia de hoje ainda está em andamento. A maior sequência não é uma medida de toda a vida da conta.
+- `contributions-*.svg`: o calendário de contribuições do último ano, com as células, os níveis e as cores que o GitHub usa. O total inclui repositórios privados porque o perfil exibe contribuições privadas.
+- `activity.svg`: dias ativos, sequência atual, maior sequência e melhor dia dentro do período do calendário, mais as contribuições dos últimos 12 meses. A sequência atual pode terminar ontem enquanto o dia de hoje está em andamento.
+- `stack-*.svg`, `project-*.svg` e `contact-*.svg`: conteúdo definido nas listas `STACK`, `PROJECTS` e `CONTACTS` no início do script. Linguagem e estrelas dos projetos vêm da API.
 
-O histórico de commits lista os quatro mais recentes de minha autoria nas branches padrão dos projetos públicos, com links verificáveis; contribuições e commits são medidas diferentes.
+Os cards com sufixo `-dark` e `-light` acompanham o tema de quem visita. O histórico de commits no README lista os quatro mais recentes de minha autoria nas branches padrão dos projetos públicos.
 
-O retrato ASCII se forma linha por linha durante quatro segundos e permanece completo por 3,5 segundos. Para movimento reduzido, o README usa versões estáticas do retrato e do calendário. Para reconstruir o GIF a partir do retrato existente, use Python com Pillow e Arial ou DejaVu Sans:
+O retrato ASCII se forma linha por linha durante quatro segundos e permanece completo por 3,5 segundos; com movimento reduzido, o README usa a versão estática. Para reconstruir o GIF a partir do retrato existente, use Python com Pillow e Arial ou DejaVu Sans:
 
 ```sh
 python3 scripts/build-intro.py
