@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Gera os cards do perfil a partir da API do GitHub.
+"""Gera os cards do perfil a partir do widget de contribuições e da API do GitHub.
 
 Uso: gh auth login; python3 scripts/update-profile.py
 Ou: python3 scripts/update-profile.py --data /caminho/dados.json [--date DD/MM/AAAA]
 O modo --data renderiza uma coleta já realizada, sem nova consulta.
-O workflow .github/workflows/update-profile.yml roda este script todo dia.
+O workflow .github/workflows/update-profile.yml roda este script de hora em hora.
 """
 
 import argparse
@@ -15,6 +15,7 @@ from pathlib import Path
 import re
 import subprocess
 import textwrap
+from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,10 +27,9 @@ QUERY = '''query { user(login: "Otavio-Machado-Santos") {
     pageInfo { hasNextPage }
     nodes { name stargazerCount primaryLanguage { name color } }
   }
-  contributionsCollection { contributionCalendar {
-    totalContributions weeks { contributionDays { date contributionCount contributionLevel } }
-  } }
 } }'''
+# O widget de contribuições do próprio perfil: a mesma página que o GitHub mostra a quem visita.
+CALENDAR_URL = f"https://github.com/users/{USERNAME}/contributions"
 
 SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif"
 MONO = "ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace"
@@ -90,6 +90,38 @@ def write(name, width, height, content, title, background="none", border="#30363
         f'<style>text{{font-family:{SANS}}}.mono{{font-family:{MONO}}}</style>\n'
         f'<rect x=".5" y=".5" width="{width-1}" height="{height-1}" rx="8" fill="{background}" stroke="{border}"/>\n'
         f'{content}\n</svg>\n', encoding="utf-8")
+
+
+def fetch_calendar():
+    """Lê o calendário do widget do perfil, para o card mostrar exatamente o total e os níveis do GitHub.
+
+    A API GraphQL conta alguns dias de outro jeito e fica com um total diferente do que aparece no perfil.
+    """
+    request = Request(CALENDAR_URL, headers={"User-Agent": "Mozilla/5.0"})
+    with urlopen(request, timeout=30) as response:
+        page = response.read().decode("utf-8")
+    total = re.search(r"([\d,]+)\s+contributions?\s+in the last year", page)
+    counts = {}
+    for cell, label in re.findall(r'<tool-tip[^>]*\bfor="(contribution-day-component-\d+-\d+)"[^>]*>([^<]*)</tool-tip>', page):
+        count = re.match(r"\s*(No|[\d,]+) contributions?\b", label)
+        if count:
+            counts[cell] = 0 if count.group(1) == "No" else int(count.group(1).replace(",", ""))
+    days = []
+    for tag in re.findall(r'<td[^>]*\bdata-date="[^>]*>', page):
+        date, cell, level = (re.search(rf'\b{name}="([^"]+)"', tag) for name in ("data-date", "id", "data-level"))
+        if not (cell and level) or cell.group(1) not in counts:
+            raise ValueError("O widget de contribuições mudou de formato: célula sem id, nível ou contagem.")
+        days.append({"date": date.group(1), "contributionCount": counts[cell.group(1)],
+                     "contributionLevel": LEVELS[int(level.group(1))]})
+    if not total or not days:
+        raise ValueError("O widget de contribuições mudou de formato: total ou células não encontrados.")
+    days.sort(key=lambda day: day["date"])
+    weeks = []
+    for day in days:
+        if not weeks or datetime.fromisoformat(day["date"]).weekday() == 6:  # a semana começa no domingo
+            weeks.append({"contributionDays": []})
+        weeks[-1]["contributionDays"].append(day)
+    return {"totalContributions": int(total.group(1).replace(",", "")), "weeks": weeks}
 
 
 def activity_summary(calendar):
@@ -308,7 +340,8 @@ def main():
     if user["repositories"]["pageInfo"]["hasNextPage"]:
         raise ValueError("Mais de 100 repositórios: pagine a consulta antes de atualizar os cards.")
     updated = args.date or datetime.now(ZoneInfo("America/Sao_Paulo")).strftime("%d/%m/%Y")
-    calendar = user["contributionsCollection"]["contributionCalendar"]
+    calendar = user["contributionsCollection"]["contributionCalendar"] if args.data else fetch_calendar()
+    activity_summary(calendar)  # valida datas e total antes de escrever qualquer card
     render_calendar(calendar, updated)
     render_activity(calendar, updated)
     render_stack()
