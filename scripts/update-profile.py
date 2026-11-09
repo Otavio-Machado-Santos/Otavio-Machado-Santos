@@ -35,13 +35,9 @@ SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,
 MONO = "ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace"
 MONO_EM = 0.602  # largura do caractere nas fontes monoespaçadas acima
 MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
-LEVELS = ["NONE", "FIRST_QUARTILE", "SECOND_QUARTILE", "THIRD_QUARTILE", "FOURTH_QUARTILE"]
-# Cores do próprio calendário do GitHub em cada tema.
 THEMES = {
-    "dark": {"border": "#30363d", "ink": "#e6edf3", "muted": "#8b949e", "link": "#4493f8", "chip": "#161b22",
-             "levels": ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"]},
-    "light": {"border": "#d0d7de", "ink": "#1f2328", "muted": "#59636e", "link": "#0969da", "chip": "#f6f8fa",
-              "levels": ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"]},
+    "dark": {"border": "#30363d", "ink": "#e6edf3", "muted": "#8b949e", "link": "#4493f8", "chip": "#161b22"},
+    "light": {"border": "#d0d7de", "ink": "#1f2328", "muted": "#59636e", "link": "#0969da", "chip": "#f6f8fa"},
 }
 TERMINAL = {"bg": "#0d1117", "green": "#39d353", "bar": "#2ea043", "accent": "#f46800"}  # cores do retrato
 
@@ -93,7 +89,7 @@ def write(name, width, height, content, title, background="none", border="#30363
 
 
 def fetch_calendar():
-    """Lê o calendário do widget do perfil, para o card mostrar exatamente o total e os níveis do GitHub.
+    """Lê o calendário do widget do perfil, para os números do card baterem com o gráfico nativo.
 
     A API GraphQL conta alguns dias de outro jeito e fica com um total diferente do que aparece no perfil.
     """
@@ -108,11 +104,10 @@ def fetch_calendar():
             counts[cell] = 0 if count.group(1) == "No" else int(count.group(1).replace(",", ""))
     days = []
     for tag in re.findall(r'<td[^>]*\bdata-date="[^>]*>', page):
-        date, cell, level = (re.search(rf'\b{name}="([^"]+)"', tag) for name in ("data-date", "id", "data-level"))
-        if not (cell and level) or cell.group(1) not in counts:
-            raise ValueError("O widget de contribuições mudou de formato: célula sem id, nível ou contagem.")
-        days.append({"date": date.group(1), "contributionCount": counts[cell.group(1)],
-                     "contributionLevel": LEVELS[int(level.group(1))]})
+        date, cell = (re.search(rf'\b{name}="([^"]+)"', tag) for name in ("data-date", "id"))
+        if not cell or cell.group(1) not in counts:
+            raise ValueError("O widget de contribuições mudou de formato: célula sem id ou contagem.")
+        days.append({"date": date.group(1), "contributionCount": counts[cell.group(1)]})
     if not total or not days:
         raise ValueError("O widget de contribuições mudou de formato: total ou células não encontrados.")
     days.sort(key=lambda day: day["date"])
@@ -143,42 +138,6 @@ def activity_summary(calendar):
             break
         current += 1
     return days, current, longest
-
-
-def render_calendar(calendar, updated):
-    """O calendário de contribuições como o GitHub o desenha: mesmas células, níveis e cores."""
-    weeks = calendar["weeks"]
-    pitch, left, top = 15, 54, 76
-    width, height = left + len(weeks) * pitch - 3 + 24, 222
-    for theme, c in THEMES.items():
-        parts = [f'<text x="24" y="40"><tspan font-size="20" font-weight="600" fill="{c["ink"]}">{number(calendar["totalContributions"])}</tspan>'
-                 f'<tspan font-size="14" fill="{c["muted"]}" dx="7">contribuições no último ano</tspan></text>',
-                 text(width - 24, 39, f"atualizado em {updated}", 12, c["muted"], 'text-anchor="end"')]
-        for row, label in [(1, "seg"), (3, "qua"), (5, "sex")]:
-            parts.append(text(24, top + row * pitch + 10, label, 11, c["muted"]))
-        last_month, last_label = None, -9
-        for col, week in enumerate(weeks):
-            first = datetime.fromisoformat(week["contributionDays"][0]["date"])
-            if (first.year, first.month) != last_month:
-                last_month = (first.year, first.month)
-                # A primeira coluna pode ser o resto de um mês: só rotula quando há espaço.
-                starts_soon = col == 0 and first.day > 14
-                if col - last_label >= 3 and not starts_soon:
-                    parts.append(text(left + col * pitch, top - 10, MONTHS[first.month - 1], 11, c["muted"]))
-                    last_label = col
-            for day in week["contributionDays"]:
-                row = (datetime.fromisoformat(day["date"]).weekday() + 1) % 7
-                fill = c["levels"][LEVELS.index(day["contributionLevel"])]
-                parts.append(f'<rect x="{left + col * pitch}" y="{top + row * pitch}" width="12" height="12" rx="2.5" fill="{fill}"/>')
-        footer = top + 7 * pitch + 23
-        parts.append(text(24, footer, "Calendário do GitHub, incluindo repositórios privados", 12, c["muted"]))
-        legend = width - 24 - 31 - 5 * pitch
-        parts.append(text(legend - 8, footer, "Menos", 11, c["muted"], 'text-anchor="end"'))
-        for i, fill in enumerate(c["levels"]):
-            parts.append(f'<rect x="{legend + i * pitch}" y="{footer - 10}" width="12" height="12" rx="2.5" fill="{fill}"/>')
-        parts.append(text(width - 24, footer, "Mais", 11, c["muted"], 'text-anchor="end"'))
-        write(f"contributions-{theme}.svg", width, height, "".join(parts),
-              f"{number(calendar['totalContributions'])} contribuições no último ano", border=c["border"])
 
 
 def render_activity(calendar, updated):
@@ -342,7 +301,6 @@ def main():
     updated = args.date or datetime.now(ZoneInfo("America/Sao_Paulo")).strftime("%d/%m/%Y")
     calendar = user["contributionsCollection"]["contributionCalendar"] if args.data else fetch_calendar()
     activity_summary(calendar)  # valida datas e total antes de escrever qualquer card
-    render_calendar(calendar, updated)
     render_activity(calendar, updated)
     render_stack()
     render_projects(user["repositories"]["nodes"])

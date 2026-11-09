@@ -11,8 +11,7 @@ git diff --stat
 
 O que cada card mostra:
 
-- `contributions-*.svg`: cópia do calendário de contribuições do perfil. Os dados vêm do próprio widget do GitHub (`github.com/users/<login>/contributions`), então total, células e níveis são os mesmos do gráfico nativo. Se o GitHub mudar o formato do widget, o script falha sem alterar os cards.
-- `activity.svg`: dias ativos, sequência atual, maior sequência e melhor dia dentro do período do calendário, mais as contribuições dos últimos 12 meses. A sequência atual pode terminar ontem enquanto o dia de hoje está em andamento.
+- `activity.svg`: dias ativos, sequência atual, maior sequência e melhor dia dentro do período do calendário, mais as contribuições dos últimos 12 meses. Os dados vêm do próprio widget de contribuições do perfil (`github.com/users/<login>/contributions`), então batem com o gráfico nativo; se o GitHub mudar o formato do widget, o script falha sem alterar os cards. A sequência atual pode terminar ontem enquanto o dia de hoje está em andamento.
 - `stack-*.svg`, `project-*.svg` e `contact-*.svg`: conteúdo definido nas listas `STACK`, `PROJECTS` e `CONTACTS` no início do script. Linguagem e estrelas dos projetos vêm da API.
 
 Os cards com sufixo `-dark` e `-light` acompanham o tema de quem visita. O histórico de commits no README lista os quatro mais recentes de minha autoria nas branches padrão dos projetos públicos.
